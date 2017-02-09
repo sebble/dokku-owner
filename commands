@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+[[ " help acl " == *" $1 "* ]] || [[ "$1" == "acl:"* ]] || exit "$DOKKU_NOT_IMPLEMENTED_EXIT"
+set -eo pipefail; [[ $DOKKU_TRACE ]] && set -x
+
+case "${1:-}" in
+  help)
+    echo "acl, Manage application ownership and privileged commands"
+    ;;
+  acl | acl:help)
+    usage() {
+      cat<<commands
+    acl, Manage application ownership and privileged commands
+    acl:add (<app>|--global) <name>, Add an owner to this application (or all applications)
+    acl:remove (<app>|--global) <name>, Remove an owner from this application (or all applications)
+    acl:allow <command> [<command> ...], Add <command> to white-list of user allowed commands
+    acl:deny <command> [<command> ...], Remove <command> from white-list of user allowed commands
+commands
+    }
+    cat<<usage
+Usage: dokku acl[:COMMAND]"
+
+Manage application ownership and privileged commands
+
+Additional commands:
+usage
+    usage|column -c2 -t -s,
+    echo  ""
+  ;;
+  *)
+    exit "$DOKKU_NOT_IMPLEMENTED_EXIT"
+  ;;
+esac
