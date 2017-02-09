@@ -1,4 +1,4 @@
 [plugin]
-description = "Dokku ACL plugin (sblio)"
+description = "Dokku ownership plugin (sblio)"
 version = "0.0.1"
 [plugin.config]

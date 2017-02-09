@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+[[ $DOKKU_TRACE ]] && set -x
+source "$PLUGIN_CORE_AVAILABLE_PATH/common/functions"
+source "$PLUGIN_CORE_AVAILABLE_PATH/config/functions"
+
+owner_clean() {
+  test -n "$1" \
+  && echo "$1"|tr , '\n'|sort -u|grep -v '^$'|tr '\n' , \
+  || tr , '\n'|sort -u|grep -v '^$'|tr '\n' ,
+}
+
+owner_add() {
+  APP=${1:?}
+  NAME=${2:?}
+
+  test "$APP" = "--global" || verify_app_name $APP && {
+    test -z "$NAME" && dokku_log_fail "(owner:add) USER must not be null"
+    config_set --no-restart $APP OWNERS="$(owner_clean "$(config_get $APP OWNERS),$NAME")"
+    dokku_log_info1 "Added $NAME to $APP owners list"
+  } || dokku_log_fail "Invalid application name."
+}
+
+owner_remove() {
+  APP=${1:?}
+  NAME=${2:?}
+  test "$APP" = "--global" || verify_app_name $APP && {
+    test -z "$NAME" && dokku_log_fail "(owner:add) USER must not be null"
+    config_set --no-restart $APP OWNERS="$(config_get $APP OWNERS | sed -r "s/(^|,)$NAME(,|$)/,/g;s/,+/,/g" |owner_clean)"
+    echo "Removed $NAME from $APP owners list"
+  } || dokku_log_fail "Invalid application name."
+}
+
+owner_is_admin() {
+  NAME=${1:?}
+ 
+  config_get --global OWNERS | egrep -q "(^|,)$NAME($|,)"
+}
+
+owner_is_owner() {
+  APP=${1:?}
+  NAME=${2:?}
+
+  verify_app_name $APP
+
+  config_get $APP OWNERS | egrep -q "(^|,)$NAME($|,)"
+}
+
+owner_check() {
+  owner_is_admin $2 || owner_is_owner $1 $2
+}

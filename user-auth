@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
-set -eo pipefail; [[ $DOKKU_TRACE ]] && set -x
+[[ $DOKKU_TRACE ]] && set -x
+source "$PLUGIN_AVAILABLE_PATH/owner/functions"
 
+test -n "$4" && test -d "$DOKKU_ROOT/$4" && {
+  test -n "$(config_get $4 OWNERS|tr -d ,)" && {
+     owner_check $4 $2 && exit 0 || exit 1
+  } || owner_add $4 $2 && exit 0
+}
 
+exit 0;

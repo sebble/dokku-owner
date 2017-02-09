@@ -1,23 +1,48 @@
 #!/usr/bin/env bash
-[[ " help acl " == *" $1 "* ]] || [[ "$1" == "acl:"* ]] || exit "$DOKKU_NOT_IMPLEMENTED_EXIT"
-set -eo pipefail; [[ $DOKKU_TRACE ]] && set -x
+[[ " help owner " == *" $1 "* ]] || [[ "$1" == "owner:"* ]] || exit "$DOKKU_NOT_IMPLEMENTED_EXIT"
+[[ $DOKKU_TRACE ]] && set -x
+source "$PLUGIN_CORE_AVAILABLE_PATH/common/functions"
+source "$PLUGIN_CORE_AVAILABLE_PATH/config/functions"
+source "$PLUGIN_AVAILABLE_PATH/owner/functions"
 
+: ${COMMAND:=$1}
+: ${OWNER_APP:=$2}
+: ${OWNER_USER:=$3}
+
+#set -x
 case "${1:-}" in
-  help)
-    echo "acl, Manage application ownership and privileged commands"
+  owner:me)
+      echo "Your name is $SSH_NAME."
+      owner_is_admin $SSH_NAME && echo "You are a super owner."
     ;;
-  acl | acl:help)
+  owner:ls)
+      test "$OWNER_APP" = "--global" || verify_app_name $OWNER_APP && {
+        echo "Owners:"
+        config_get $OWNER_APP OWNERS | tr ',' '\n' | sed 's/^/    /' || echo "    <none>"
+      } || dokku_log_fail "Invalid application name."
+    ;;
+  owner:add)
+      owner_add $OWNER_APP $OWNER_USER
+    ;;
+  owner:remove)
+      owner_remove $OWNER_APP $OWNER_USER
+    ;;
+  help)
+    echo "    owner, Manage application ownership and privileged commands"
+    ;;
+  owner | owner:help)
     usage() {
       cat<<commands
-    acl, Manage application ownership and privileged commands
-    acl:add (<app>|--global) <name>, Add an owner to this application (or all applications)
-    acl:remove (<app>|--global) <name>, Remove an owner from this application (or all applications)
-    acl:allow <command> [<command> ...], Add <command> to white-list of user allowed commands
-    acl:deny <command> [<command> ...], Remove <command> from white-list of user allowed commands
+    owner, Manage application ownership and privileged commands
+    owner:me, Say my name
+    owner:ls (<app>|--global), List all owners for this applciation
+    owner:add (<app>|--global) <name>, Add an owner to this application (or all applications)
+    owner:remove (<app>|--global) <name>, Remove an owner from this application (or all applications)
+    owner:help, This help
 commands
     }
     cat<<usage
-Usage: dokku acl[:COMMAND]"
+Usage: dokku owner[:COMMAND]"
 
 Manage application ownership and privileged commands
 
@@ -25,8 +50,8 @@ Additional commands:
 usage
     usage|column -c2 -t -s,
     echo  ""
-  ;;
+    ;;
   *)
     exit "$DOKKU_NOT_IMPLEMENTED_EXIT"
-  ;;
+    ;;
 esac
